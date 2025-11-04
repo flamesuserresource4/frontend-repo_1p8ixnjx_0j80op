@@ -1,28 +1,74 @@
-import { useState } from 'react'
+import React, { useMemo, useRef, useState } from "react";
+import HeaderBar from "./components/HeaderBar.jsx";
+import ChordToolbar from "./components/ChordToolbar.jsx";
+import LyricsEditor from "./components/LyricsEditor.jsx";
+import LyricsPreview from "./components/LyricsPreview.jsx";
+import ChordShapes from "./components/ChordShapes.jsx";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [title, setTitle] = useState("");
+  const [singer, setSinger] = useState("");
+  const [lyrics, setLyrics] = useState("");
+  const [selectedChord, setSelectedChord] = useState("C");
+  const editorRef = useRef(null);
+
+  const usedChords = useMemo(() => {
+    const set = new Set();
+    const regex = /\[([^\]]+)\]/g;
+    let m;
+    while ((m = regex.exec(lyrics)) !== null) {
+      set.add(m[1].trim());
+    }
+    return Array.from(set);
+  }, [lyrics]);
+
+  const handleHeaderChange = ({ title: t, singer: s }) => {
+    setTitle(t);
+    setSinger(s);
+  };
+
+  const insertChord = (ch) => {
+    editorRef.current?.insertChordAtCursor(ch);
+  };
+
+  const clearChords = () => {
+    setLyrics((prev) => prev.replace(/\[[^\]]+\]/g, ""));
+  };
+
+  const loadSample = () => {
+    setTitle("Shine On");
+    setSinger("The Daydreamers");
+    setLyrics(
+      `Wake up to the [G]light, feel the [D]morning in your [Em]eyes\nBreathe in and [C]let it go\n\nTake a step into the [Am]sun, leave the [D]shadows all be[G]hind\nWe were [C]made to glow`
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
-          Vibe Coding Platform
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Your AI-powered development environment
-        </p>
-        <div className="text-center">
-          <button
-            onClick={() => setCount(count + 1)}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-          >
-            Count is {count}
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-violet-50 to-fuchsia-50">
+      <HeaderBar title={title} singer={singer} onChange={handleHeaderChange} />
+
+      <main className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 gap-6">
+        <ChordToolbar
+          selectedChord={selectedChord}
+          onSelect={setSelectedChord}
+          onInsert={insertChord}
+          onClear={clearChords}
+          onSample={loadSample}
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <LyricsEditor ref={editorRef} lyrics={lyrics} onChange={setLyrics} />
+          <LyricsPreview title={title} singer={singer} lyrics={lyrics} />
         </div>
-      </div>
+
+        <ChordShapes usedChords={usedChords} />
+
+        <footer className="text-center text-xs text-gray-500 py-4">
+          Tip: Place chords with square brackets like [G] right before the syllable they align with.
+        </footer>
+      </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
